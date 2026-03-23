@@ -151,7 +151,7 @@ ryom-git-automator/
 | `lib/status.sh` | Dashboard | Health Check | Visualizes Ahead/Behind counts & workspace stats |
 | `lib/setup.sh` | Config | Identity | Generates SSH Ed25519 keys and `git config` |
 | `lib/save.sh` | Action | Commit Engine | Manages Branch Switching and Atomic Commits |
-| `lib/sync.sh` | Network | Remote Bridge | Manages `fetch`, `rebase`, and `push` safely |
+| `lib/sync.sh` | Network | Remote Bridge | Manages `fetch`, `rebase`, `pull` and `push` safely |
 
 ---
 
