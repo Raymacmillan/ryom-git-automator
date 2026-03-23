@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+# --- 1. The Standard Sync (Current Branch Handshake) ---
 ryom_sync() {
     CURRENT_BRANCH=$(git branch --show-current)
     BRANCH_TAG="${YELLOW}( $CURRENT_BRANCH)${NC}"
@@ -13,12 +14,11 @@ ryom_sync() {
 
     echo -e "${BLUE}>>> Syncing $BRANCH_TAG with Remote...${NC}"
 
-    # 1. Fetch
+    # Fetch updates silently
     echo -ne "${YELLOW}[FETCHING]${NC} Checking updates... "
     git fetch origin &>/dev/null
     echo -e "${GREEN}DONE${NC}"
 
-    # 2. Strategic Choice
     echo -e "\n${YELLOW}Integration Strategy:${NC}"
     echo "1) Rebase  2) Merge  3) Push Only  q) Quit"
     read -p "> " sync_choice
@@ -30,7 +30,6 @@ ryom_sync() {
         3) echo "Skipping pull..." ;;
     esac
 
-    # 3. Push
     echo -ne "${YELLOW}[PUSHING]${NC} Sending to GitHub... "
     if git push origin "$CURRENT_BRANCH" &>/dev/null; then
         echo -e "${GREEN}SUCCESS${NC}"
@@ -39,6 +38,39 @@ ryom_sync() {
     fi
 }
 
+# --- 2. THE NEW PULL (Inter-branch logic) ---
+ryom_pull() {
+    echo -e "${BLUE}>>> Fetching Remote Data...${NC}"
+    git fetch origin &>/dev/null
+
+    # Get a list of remote branches
+    mapfile -t remotes < <(git branch -r | grep "origin/" | grep -v "HEAD" | sed 's/  origin\///')
+    
+    echo -e "${YELLOW}Which remote branch do you want to pull into your current work?${NC}"
+    select rb in "${remotes[@]}" "Cancel"; do
+        [[ -n "$REPLY" ]] && check_quit "$REPLY"
+        if [[ "$rb" == "Cancel" ]]; then return;
+        elif [[ -n "$rb" ]]; then
+            TARGET=$rb
+            break
+        fi
+    done
+
+    echo -e "\n${CYAN}[PULL STRATEGY]${NC} for origin/$TARGET:"
+    echo "1) Rebase (Linear)  2) Merge (Classic)  q) Quit"
+    read -p "> " p_choice
+    check_quit "$p_choice"
+
+    echo -ne "${YELLOW}[PULLING]${NC} ... "
+    if [[ "$p_choice" == "1" ]]; then
+        git pull --rebase origin "$TARGET" &>/dev/null
+    else
+        git pull origin "$TARGET" &>/dev/null
+    fi
+    echo -e "${GREEN}DONE${NC}"
+}
+
+# --- Internal Conflict Helper ---
 _handle_conflict() {
     local mode=$1
     echo -e "\n${RED}!!! CONFLICT !!!${NC}"
@@ -47,6 +79,7 @@ _handle_conflict() {
 
     if [[ "$c_act" == "1" ]]; then
         [[ "$mode" == "rebase" ]] && git rebase --abort || git merge --abort
+        echo "Action aborted."
     else
         echo "Fix markers (<<<<), then run 'git $mode --continue'."
         exit 0
