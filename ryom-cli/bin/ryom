@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SOURCE_DIR="$(dirname "$(readlink -f "$0")")/../lib"
+
+# Load Core
+if [[ -f "$SOURCE_DIR/core.sh" ]]; then
+    source "$SOURCE_DIR/core.sh"
+else
+    echo "Fatal Error: core.sh not found."
+    exit 1
+fi
+
+show_help() {
+    echo -e "${BLUE}RYOM CLI - v1.1.0${NC}"
+    echo -e "The automated workflow for Philosopher-Builders.\n"
+    echo -e "${YELLOW}COMMANDS:${NC}"
+    echo "  status   View workspace dashboard (sync health & file stats)"
+    echo "  save     Commit changes with structured atomic messages"
+    echo "  sync     Synchronize local work with GitHub (Pull/Push)"
+    echo "  setup    Configure SSH keys and Git identity"
+    echo "  help     Show this manual"
+    echo "  quit     Exit the RYOM environment"
+    echo ""
+    echo -e "${CYAN}TIP:${NC} You can type 'q' or 'quit' at any prompt to exit safely."
+}
+
+if [[ $# -lt 1 ]] || [[ "$1" == "help" ]] || [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
+    show_help
+    exit 0
+fi
+
+COMMAND=$1
+
+case "$COMMAND" in
+    status) source "$SOURCE_DIR/status.sh" && ryom_status ;;
+    save)   source "$SOURCE_DIR/save.sh"   && ryom_save ;;
+    sync)   source "$SOURCE_DIR/sync.sh"   && ryom_sync ;;
+    setup)  source "$SOURCE_DIR/setup.sh"  && ryom_setup ;;
+    quit|q) ryom_quit ;;
+    *)      die "Unknown command: $1. Type 'ryom help' for available commands." ;;
+esac
